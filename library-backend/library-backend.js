@@ -94,6 +94,17 @@ const resolvers = {
       const user = await authenticate(context);
       return await User.findById(user.id);
     },
+    /*me: async (_, __, context) => {
+      try {
+        const user = await authenticate(context);
+        if (!user) throw new Error("User not authenticated");
+
+        return user;
+      } catch (error) {
+        console.error("Error in 'me' resolver:", error);
+        throw new Error("Failed to fetch user data");
+      }
+    },*/
   },
 
   Mutation: {
@@ -128,8 +139,9 @@ const resolvers = {
     },
 
     editAuthor: async (_, { name, setBornTo }, context) => {
-      console.log(context, "Context editAuthor");
+      //console.log(context, "Context editAuthor");
       console.log("editAuthor mutation triggered");
+      //console.log(context.req, "Context req");
       await authenticate(context); // Authentication required
 
       const authorToEdit = await Author.findOne({ name });
@@ -177,22 +189,28 @@ app.use((req, res, next) => {
   next();
 });
 
+console.log("Server starting...");
 // Apollo server setup
 const server = new ApolloServer({
   typeDefs,
   resolvers,
-  context: ({ req }) => {
-    console.log("Incoming request headers:", req.headers);
-    return {
-      req, // Pass the request object to context so that the authenticate middleware can access it
-    };
-  },
 });
 
 // Start the Apollo server
 startStandaloneServer(server, {
   listen: { port: 4000 },
+  context: ({ req }) => {
+    if (!req) {
+      throw new Error("Request object is not defined");
+    }
+    console.log("Context function executed");
+    //console.log("Incoming request headers:", req);
+    //console.log("Incoming request headers:", req.headers);
+    return {
+      req, // Pass the request object to context so that the authenticate middleware can access it
+    };
+  },
 }).then(({ url }) => {
   console.log(`Server ready at ${url}`);
-  console.log("Server", server.context);
+  //console.log("Server", server.context);
 });
