@@ -10,6 +10,8 @@ const authLink = new ApolloLink((operation, forward) => {
   const token = localStorage.getItem("auth-token"); // Dynamically get the token from localStorage
 
   console.log("Authorization token:", token);
+  console.log("Operation:", operation);
+  console.log("Forward function:", forward);
 
   operation.setContext({
     headers: {

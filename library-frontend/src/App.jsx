@@ -6,6 +6,7 @@ import Authors from "./components/Authors";
 import Books from "./components/Books";
 import NewBook from "./components/NewBook";
 import Login from "./components/Login";
+import Recommendations from "./components/Recommedations";
 
 const App = () => {
   const [page, setPage] = useState("authors"); // Default to authors page
@@ -35,6 +36,9 @@ const App = () => {
             <>
               <button onClick={() => setPage("authors")}>Authors</button>
               <button onClick={() => setPage("books")}>Books</button>
+              <button onClick={() => setPage("recommendations")}>
+                Recommedations
+              </button>
               <button onClick={() => setPage("add")}>Add Book</button>
               <button onClick={handleLogout}>Logout</button>
             </>
@@ -48,6 +52,7 @@ const App = () => {
         {page === "authors" && <Authors loggedIn={loggedIn} />}
         {page === "books" && <Books loggedIn={loggedIn} />}
         {page === "add" && <NewBook loggedIn={loggedIn} />}
+        {page === "recommendations" && <Recommendations loggedIn={loggedIn} />}
       </div>
     </ApolloProvider>
   );
