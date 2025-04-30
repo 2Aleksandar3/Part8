@@ -1,7 +1,7 @@
 import { useQuery, gql } from "@apollo/client";
 import { useState } from "react";
 
-const GET_BOOKS = gql`
+const GET_ALL_BOOKS = gql`
   query {
     allBooks {
       title
@@ -14,23 +14,54 @@ const GET_BOOKS = gql`
   }
 `;
 
+const GET_BOOKS_BY_GENRE = gql`
+  query ($genre: String!) {
+    allBooks(genre: $genre) {
+      title
+      author {
+        name
+      }
+      published
+      genres
+    }
+  }
+`;
+
 const Books = () => {
   const [genreFilter, setGenreFilter] = useState("");
-  const { loading, error, data } = useQuery(GET_BOOKS);
-
-  if (loading) return <p>Loading...</p>;
-  if (error) return <p>Error: {error.message}</p>;
-
-  const books = data.allBooks;
-
-  const uniqueGenres = [...new Set(books.flatMap((book) => book.genres))];
-  const filteredBooks = books.filter((book) => {
-    if (genreFilter === "") return true;
-    return book.genres.includes(genreFilter);
+  const {
+    data: allBooksData,
+    loading: allBooksLoading,
+    error: allBooksError,
+  } = useQuery(GET_ALL_BOOKS);
+  const {
+    data: filteredData,
+    loading: filteredLoading,
+    error: filteredError,
+    refetch: refetchGenreBooks,
+  } = useQuery(GET_BOOKS_BY_GENRE, {
+    variables: { genre: genreFilter },
+    skip: genreFilter === "",
   });
 
+  console.log("filteredData:", filteredData);
+  console.log("filteredError:", filteredError);
+
+  if (allBooksLoading || filteredLoading) return <p>Loading...</p>;
+  if (allBooksError) return <p>Error: {allBooksError.message}</p>;
+  if (filteredError) return <p>Error: {filteredError.message}</p>;
+
+  const books =
+    genreFilter === "" ? allBooksData.allBooks : filteredData?.allBooks;
+
+  const uniqueGenres = allBooksData
+    ? [...new Set(allBooksData.allBooks.flatMap((book) => book.genres))]
+    : [];
   const handleGenreChange = (genre) => {
     setGenreFilter(genre);
+    if (genre !== "") {
+      refetchGenreBooks({ genre });
+    }
   };
 
   return (
@@ -51,7 +82,7 @@ const Books = () => {
           </tr>
         </thead>
         <tbody>
-          {filteredBooks.map((book) => (
+          {books.map((book) => (
             <tr key={book.title}>
               <td>{book.title}</td>
               <td>{book.author.name}</td>
