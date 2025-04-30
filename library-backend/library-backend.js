@@ -6,6 +6,14 @@ const bcrypt = require("bcryptjs");
 require("dotenv").config();
 const express = require("express");
 const app = express();
+const { expressMiddleware } = require("@apollo/server/express4");
+const {
+  ApolloServerPluginDrainHttpServer,
+} = require("@apollo/server/plugin/drainHttpServer");
+const { makeExecutableSchema } = require("@graphql-tools/schema");
+const express = require("express");
+const cors = require("cors");
+const http = require("http");
 
 // Import the Mongoose models
 const { Author, Book, User } = require("./models");
@@ -43,7 +51,7 @@ const typeDefs = `
   }
 
   type Query {
-    allBooks: [Book!]!
+    allBooks(genre: String): [Book!]!
     allAuthors: [Author!]!
     me: User
   }
@@ -76,8 +84,14 @@ const authenticate = (context) => {
 // Resolvers
 const resolvers = {
   Query: {
-    allBooks: async () => {
-      return await Book.find().populate("author", "name"); // Populate author details in the books
+    allBooks: async (_, args) => {
+      if (args.genre) {
+        return await Book.find({ genres: args.genre }).populate(
+          "author",
+          "name"
+        );
+      }
+      return await Book.find().populate("author", "name");
     },
     allAuthors: async () => {
       const authors = await Author.find();
@@ -132,7 +146,7 @@ const resolvers = {
         });
         await newBook.save();
 
-        return newBook;
+        return newBook.populate("author");
       } catch (error) {
         throw new Error("Error adding book: " + error.message);
       }
