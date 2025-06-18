@@ -9,7 +9,8 @@ const cors = require("cors");
 const http = require("http");
 const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
-
+const { WebSocketServer } = require("ws");
+const { useServer } = require("graphql-ws/use/ws");
 const { Author, Book, User } = require("./models");
 const { PubSub } = require("graphql-subscriptions");
 const pubsub = new PubSub();
@@ -25,17 +26,37 @@ mongoose
   .then(() => console.log("MongoDB connected"))
   .catch((error) => console.error("MongoDB connection error:", error));
 
+mongoose.set("debug", true);
+
 // Schema and resolvers
 const typeDefs = require("./schema");
 const resolvers = require("./resolvers");
 
 // Setup server
 const start = async () => {
+  const wsServer = new WebSocketServer({
+    server: httpServer,
+    path: "/",
+  });
+
+  const schema = makeExecutableSchema({ typeDefs, resolvers });
+  const serverCleanup = useServer({ schema }, wsServer);
   const server = new ApolloServer({
     schema: makeExecutableSchema({ typeDefs, resolvers }),
-    introspection: true, // Ensure introspection is enabled
+    introspection: true,
     playground: true,
-    plugins: [ApolloServerPluginDrainHttpServer({ httpServer })],
+    plugins: [
+      ApolloServerPluginDrainHttpServer({ httpServer }),
+      {
+        async serverWillStart() {
+          return {
+            async drainServer() {
+              await serverCleanup.dispose();
+            },
+          };
+        },
+      },
+    ],
   });
 
   await server.start();

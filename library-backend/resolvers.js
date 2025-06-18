@@ -14,7 +14,26 @@ const resolvers = {
       return await Book.find().populate("author", "name");
     },
     allAuthors: async () => {
-      return await Author.find();
+      const authors = await Author.find();
+
+      const bookCounts = await Book.aggregate([
+        {
+          $group: {
+            _id: "$author",
+            count: { $sum: 1 },
+          },
+        },
+      ]);
+
+      const countMap = {};
+      bookCounts.forEach(({ _id, count }) => {
+        countMap[_id.toString()] = count;
+      });
+
+      return authors.map((author) => ({
+        ...author.toObject(),
+        bookCount: countMap[author._id.toString()] || 0,
+      }));
     },
     me: async (_, __, context) => {
       return context.currentUser;
@@ -44,10 +63,11 @@ const resolvers = {
       });
       await newBook.save();
 
-      // Publish to subscribers when a new book is added
+      await newBook.populate("author");
+
       pubsub.publish("BOOK_ADDED", { bookAdded: newBook });
 
-      return newBook.populate("author");
+      return newBook;
     },
 
     editAuthor: async (_, { name, setBornTo }, context) => {
@@ -68,7 +88,7 @@ const resolvers = {
     },
 
     createUser: async (_, { username, favoriteGenre }) => {
-      const passwordHash = "hashed_password"; // Simplified for this example
+      const passwordHash = "hashed_password";
       const newUser = new User({
         username,
         favoriteGenre,
@@ -98,7 +118,7 @@ const resolvers = {
 
   Subscription: {
     bookAdded: {
-      subscribe: () => pubsub.asyncIterator("BOOK_ADDED"),
+      subscribe: () => pubsub.asyncIterableIterator("BOOK_ADDED"),
     },
   },
 };
