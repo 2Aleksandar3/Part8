@@ -1,14 +1,6 @@
 import { useState } from "react";
-import { useMutation, gql } from "@apollo/client";
-
-// GraphQL login mutation
-const LOGIN_USER = gql`
-  mutation Login($username: String!, $password: String!) {
-    login(username: $username, password: $password) {
-      value
-    }
-  }
-`;
+import { useMutation } from "@apollo/client";
+import { LOGIN_USER } from "../queries";
 
 const Login = ({ setToken, setLoggedIn }) => {
   const [username, setUsername] = useState("");
@@ -17,14 +9,9 @@ const Login = ({ setToken, setLoggedIn }) => {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-
     try {
       const { data } = await login({ variables: { username, password } });
-
-      // Store the JWT token in localStorage
       localStorage.setItem("auth-token", data.login.value);
-
-      // Update state to reflect user login
       setToken(data.login.value);
       setLoggedIn(true);
     } catch (error) {
@@ -38,26 +25,22 @@ const Login = ({ setToken, setLoggedIn }) => {
       <h2>Login</h2>
       <form onSubmit={handleLogin}>
         <div>
-          <label>
-            Username:
-            <input
-              type="text"
-              value={username}
-              onChange={({ target }) => setUsername(target.value)}
-              required
-            />
-          </label>
+          Username:
+          <input
+            type="text"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            required
+          />
         </div>
         <div>
-          <label>
-            Password:
-            <input
-              type="password"
-              value={password}
-              onChange={({ target }) => setPassword(target.value)}
-              required
-            />
-          </label>
+          Password:
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
         </div>
         <button type="submit">Log in</button>
       </form>

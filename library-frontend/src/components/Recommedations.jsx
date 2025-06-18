@@ -1,37 +1,16 @@
-import { useQuery, gql } from "@apollo/client";
-
-const GET_USER_FAVOURITE_GENRE = gql`
-  query {
-    me {
-      favoriteGenre
-    }
-  }
-`;
-
-const GET_BOOKS = gql`
-  query {
-    allBooks {
-      title
-      author {
-        name
-      }
-      published
-      genres
-    }
-  }
-`;
+import { useQuery } from "@apollo/client";
+import { GET_USER_FAVOURITE_GENRE, GET_ALL_BOOKS } from "../queries";
 
 const Recommendations = () => {
-  const { loading, error, data } = useQuery(GET_USER_FAVOURITE_GENRE);
+  const { data: userData, loading, error } = useQuery(GET_USER_FAVOURITE_GENRE);
   const {
     data: booksData,
     loading: booksLoading,
     error: booksError,
-  } = useQuery(GET_BOOKS);
+  } = useQuery(GET_ALL_BOOKS);
 
-  const favoriteGenre = data?.me?.favoriteGenre;
+  const favoriteGenre = userData?.me?.favoriteGenre;
   const books = booksData?.allBooks || [];
-
   const filteredBooks = books.filter((book) =>
     book.genres.includes(favoriteGenre)
   );
@@ -44,7 +23,7 @@ const Recommendations = () => {
     <div>
       <h2>Recommendations</h2>
       <p>
-        Books in your favorite genre: <b>{data.me.favoriteGenre}</b>
+        Books in your favorite genre: <b>{favoriteGenre}</b>
       </p>
       {favoriteGenre ? (
         <table>

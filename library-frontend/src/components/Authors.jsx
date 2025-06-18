@@ -1,59 +1,26 @@
-import { useQuery, gql, useMutation } from "@apollo/client";
+import { useQuery, useMutation } from "@apollo/client";
 import { useState } from "react";
-import Select from "react-select"; // Import react-select
-
-// GraphQL query to get authors
-const GET_AUTHORS = gql`
-  query {
-    allAuthors {
-      name
-      born
-      bookCount
-    }
-  }
-`;
-
-// GraphQL mutation to update author's birth year
-const UPDATE_AUTHOR_BIRTHYEAR = gql`
-  mutation EditAuthor($name: String!, $born: Int!) {
-    editAuthor(name: $name, setBornTo: $born) {
-      name
-      born
-    }
-  }
-`;
+import Select from "react-select";
+import { GET_ALL_AUTHORS, EDIT_AUTHOR } from "../queries";
 
 const Authors = ({ loggedIn }) => {
-  const { loading, error, data, refetch } = useQuery(GET_AUTHORS);
-  const [updateAuthor] = useMutation(UPDATE_AUTHOR_BIRTHYEAR);
+  const { loading, error, data, refetch } = useQuery(GET_ALL_AUTHORS);
+  const [updateAuthor] = useMutation(EDIT_AUTHOR);
 
   const [selectedAuthor, setSelectedAuthor] = useState(null);
   const [birthYear, setBirthYear] = useState("");
 
-  const handleBirthYearChange = (e) => setBirthYear(e.target.value);
-
   const handleUpdateAuthor = async () => {
-    if (!selectedAuthor) {
-      alert("Please select an author.");
-      return;
-    }
-
-    // Validate the birth year input
-    if (!birthYear || isNaN(birthYear)) {
-      alert("Please enter a valid birth year.");
+    if (!selectedAuthor || !birthYear || isNaN(birthYear)) {
+      alert("Please select an author and enter a valid birth year.");
       return;
     }
 
     try {
-      // Perform the mutation
       await updateAuthor({
         variables: { name: selectedAuthor.value, born: parseInt(birthYear) },
       });
-
-      // Refetch the authors query to update the list
       await refetch();
-
-      // Reset the birth year field after the update
       setBirthYear("");
     } catch (error) {
       console.error("Error updating author:", error);
@@ -87,35 +54,21 @@ const Authors = ({ loggedIn }) => {
         </tbody>
       </table>
 
-      {/* Only show the "Set Birth Year" form if logged in */}
       {loggedIn && (
         <div>
           <h3>Set Birth Year</h3>
-          <div>
-            <label>
-              Author:
-              <Select
-                value={selectedAuthor}
-                onChange={setSelectedAuthor}
-                options={authors.map((author) => ({
-                  value: author.name,
-                  label: author.name,
-                }))}
-                placeholder="Select an author"
-              />
-            </label>
-          </div>
-          <div>
-            <label>
-              Birth Year:
-              <input
-                type="number"
-                value={birthYear}
-                onChange={handleBirthYearChange}
-                placeholder="Enter birth year"
-              />
-            </label>
-          </div>
+          <Select
+            value={selectedAuthor}
+            onChange={setSelectedAuthor}
+            options={authors.map((a) => ({ value: a.name, label: a.name }))}
+            placeholder="Select an author"
+          />
+          <input
+            type="number"
+            value={birthYear}
+            onChange={(e) => setBirthYear(e.target.value)}
+            placeholder="Enter birth year"
+          />
           <button onClick={handleUpdateAuthor}>Update Author</button>
         </div>
       )}

@@ -1,34 +1,10 @@
-import { useQuery, gql } from "@apollo/client";
+import { useQuery } from "@apollo/client";
 import { useState } from "react";
-
-const GET_ALL_BOOKS = gql`
-  query {
-    allBooks {
-      title
-      author {
-        name
-      }
-      published
-      genres
-    }
-  }
-`;
-
-const GET_BOOKS_BY_GENRE = gql`
-  query ($genre: String!) {
-    allBooks(genre: $genre) {
-      title
-      author {
-        name
-      }
-      published
-      genres
-    }
-  }
-`;
+import { GET_ALL_BOOKS, GET_BOOKS_BY_GENRE } from "../queries";
 
 const Books = () => {
   const [genreFilter, setGenreFilter] = useState("");
+
   const {
     data: allBooksData,
     loading: allBooksLoading,
@@ -44,30 +20,26 @@ const Books = () => {
     skip: genreFilter === "",
   });
 
-  console.log("filteredData:", filteredData);
-  console.log("filteredError:", filteredError);
+  const books =
+    genreFilter === "" ? allBooksData?.allBooks : filteredData?.allBooks || [];
+
+  const uniqueGenres = allBooksData
+    ? [...new Set(allBooksData.allBooks.flatMap((book) => book.genres))]
+    : [];
+
+  const handleGenreChange = (genre) => {
+    setGenreFilter(genre);
+    if (genre !== "") refetchGenreBooks({ genre });
+  };
 
   if (allBooksLoading || filteredLoading) return <p>Loading...</p>;
   if (allBooksError) return <p>Error: {allBooksError.message}</p>;
   if (filteredError) return <p>Error: {filteredError.message}</p>;
 
-  const books =
-    genreFilter === "" ? allBooksData.allBooks : filteredData?.allBooks;
-
-  const uniqueGenres = allBooksData
-    ? [...new Set(allBooksData.allBooks.flatMap((book) => book.genres))]
-    : [];
-  const handleGenreChange = (genre) => {
-    setGenreFilter(genre);
-    if (genre !== "") {
-      refetchGenreBooks({ genre });
-    }
-  };
-
   return (
     <div>
       <h2>Books</h2>
-      {genreFilter !== "" && (
+      {genreFilter && (
         <p>
           In genre: <b>{genreFilter}</b>
         </p>
